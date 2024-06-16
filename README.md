@@ -1,2 +1,2 @@
-# alu-mobile-dev
-Group 13 Mobile Dev Projects
+# Flutter animation
+Link to demo:
