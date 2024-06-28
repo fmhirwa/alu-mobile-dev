@@ -8,6 +8,7 @@ import 'profile_screen.dart';
 //import 'map_screen.dart';
 import 'report.dart';
 import 'walking_screen.dart';
+import 'welcome.dart';
 
 void main() {
   runApp(SafeMoveApp());
@@ -29,9 +30,10 @@ class SafeMoveApp extends StatelessWidget {
           bodyText2: TextStyle(fontSize: 14.0, fontFamily: 'Hind'),
         ),*/
       ),
-      initialRoute: '/',
+      //initialRoute: '/',
+      home: WelcomeScreen(),
       routes: {
-        '/': (context) => LoginScreen(),
+        '/login': (context) => LoginScreen(),
         '/signup': (context) => SignupScreen(),
         '/home': (context) => HomeScreen(),
         '/profile': (context) => UserProfileScreen(),
