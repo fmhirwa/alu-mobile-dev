@@ -23,12 +23,12 @@ class SafeMoveApp extends StatelessWidget {
         primaryColor: Colors.cyan[600],
         hintColor: Colors.cyan[600],
         fontFamily: 'Arial',
-        /*
+        
         textTheme: Theme.of(context).textTheme.copyWith(
-          headline1: TextStyle(fontSize: 72.0, fontWeight: FontWeight.bold),
-          headline6: TextStyle(fontSize: 36.0, fontStyle: FontStyle.italic),
-          bodyText2: TextStyle(fontSize: 14.0, fontFamily: 'Hind'),
-        ),*/
+          displayLarge: TextStyle(fontSize: 72.0, fontWeight: FontWeight.bold),
+          displayMedium: TextStyle(fontSize: 36.0, fontStyle: FontStyle.italic),
+          displaySmall: TextStyle(fontSize: 14.0, fontFamily: 'Hind'),
+        ),
       ),
       //initialRoute: '/',
       home: WelcomeScreen(),
