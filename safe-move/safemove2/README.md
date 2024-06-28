@@ -1,16 +1,22 @@
 # safemove
 
-A new Flutter project.
+Prepared on Android 14.
 
-## Getting Started
+Use Flutter run to run.
 
-This project is a starting point for a Flutter application.
+Enjoy!
 
-A few resources to get you started if this is your first Flutter project:
+G13 BSE S22
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+Front-end Implementation
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+G13 S22 BSE
+
+Codebase link:
+https://github.com/fmhirwa/alu-mobile-dev/tree/main/safe-move/safemove2
+
+Demo:
+https://youtu.be/GHGxEca9Klc
+
+Figma Design:
+https://www.figma.com/design/P4v2PWQzzlRTJnuWpcJrKL/SafeMove-Design?node-id=0-1&t=uoIwVIvZAZe0lShh-1
