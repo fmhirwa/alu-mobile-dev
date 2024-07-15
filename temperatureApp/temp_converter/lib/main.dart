@@ -90,22 +90,60 @@ class _TempConverterHomePageState extends State<TempConverterHomePage> {
             child: Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
-                children: <Widget>[
-                  ConversionSelector(
-                    isFahrenheitToCelsius: isFahrenheitToCelsius,
-                    onChanged: (value) {
-                      setState(() {
-                        isFahrenheitToCelsius = value;
-                      });
-                    },
-                  ),
-                  TemperatureInput(
-                    value: input,
-                    onChanged: onInputChanged,
-                  ),
-                  ConversionResult(result: result),
-                  ConvertButton(onPressed: convert),
-                  HistoryList(history: history),
+                children: [
+                  if (orientation == Orientation.portrait) ...[
+                    Column(
+                      children: <Widget>[
+                        ConversionSelector(
+                          isFahrenheitToCelsius: isFahrenheitToCelsius,
+                          onChanged: (value) {
+                            setState(() {
+                              isFahrenheitToCelsius = value;
+                            });
+                          },
+                        ),
+                        TemperatureInput(
+                          value: input,
+                          onChanged: onInputChanged,
+                        ),
+                        ConversionResult(result: result),
+                        ConvertButton(onPressed: convert),
+                      ],
+                    ),
+                    HistoryList(history: history),
+                  ] else ...[
+                    Row(
+                      children: <Widget>[
+                        Expanded(
+                          child: Column(
+                            children: <Widget>[
+                              ConversionSelector(
+                                isFahrenheitToCelsius: isFahrenheitToCelsius,
+                                onChanged: (value) {
+                                  setState(() {
+                                    isFahrenheitToCelsius = value;
+                                  });
+                                },
+                              ),
+                              TemperatureInput(
+                                value: input,
+                                onChanged: onInputChanged,
+                              ),
+                            ],
+                          ),
+                        ),
+                        Expanded(
+                          child: Column(
+                            children: <Widget>[
+                              ConversionResult(result: result),
+                              ConvertButton(onPressed: convert),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    HistoryList(history: history),
+                  ],
                 ],
               ),
             ),
