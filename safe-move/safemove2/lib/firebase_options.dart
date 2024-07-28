@@ -5,14 +5,14 @@ import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
    
-    return FirebaseOptions(/*
-      apiKey: 'your-api-key',
+    return FirebaseOptions(
+      apiKey: 'yAIzaSyAKWy9DjKGtroA-NMOKtLH65eDoDry0Dx4',
       authDomain: 'your-auth-domain',
-      projectId: 'your-project-id',
-      storageBucket: 'your-storage-bucket',
+      projectId: 'safe-move-53af7',
+      storageBucket: 'storage-bucket',
       messagingSenderId: 'your-messaging-sender-id',
-      appId: 'your-app-id',
-      measurementId: 'your-measurement-id',*/
+      appId: '1:1020014988960:android:277b4ecc09b0cd50b7c3c5',
+      measurementId: 'your-measurement-id'
     );
   }
 }
