@@ -1,0 +1,29 @@
+{
+    "project_info": {
+      "project_number": "1020014988960",
+      "project_id": "safe-move-53af7",
+      "storage_bucket": "safe-move-53af7.appspot.com"
+    },
+    "client": [
+      {
+        "client_info": {
+          "mobilesdk_app_id": "1:1020014988960:android:277b4ecc09b0cd50b7c3c5",
+          "android_client_info": {
+            "package_name": "com.fmhirwa.safemove"
+          }
+        },
+        "oauth_client": [],
+        "api_key": [
+          {
+            "current_key": "AIzaSyAKWy9DjKGtroA-NMOKtLH65eDoDry0Dx4"
+          }
+        ],
+        "services": {
+          "appinvite_service": {
+            "other_platform_oauth_client": []
+          }
+        }
+      }
+    ],
+    "configuration_version": "1"
+  }

@@ -1,6 +1,40 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
-class WalkingScreen extends StatelessWidget {
+class WalkingScreen extends StatefulWidget {
+  @override
+  _WalkingScreenState createState() => _WalkingScreenState();
+}
+
+class _WalkingScreenState extends State<WalkingScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final TextEditingController _distanceController = TextEditingController();
+  final TextEditingController _durationController = TextEditingController();
+
+  Future<void> _logActivity() async {
+    if (_formKey.currentState!.validate()) {
+      try {
+        User? user = FirebaseAuth.instance.currentUser;
+        await FirebaseFirestore.instance.collection('activities').add({
+          'userId': user?.uid,
+          'distance': double.parse(_distanceController.text),
+          'duration': int.parse(_durationController.text),
+          'timestamp': Timestamp.now(),
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Activity logged successfully')),
+        );
+        _distanceController.clear();
+        _durationController.clear();
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to log activity: $e')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -91,6 +125,62 @@ class WalkingScreen extends StatelessWidget {
                 onTap: () {
                   // Handle navigation to add more activities
                 },
+              ),
+            ),
+            SizedBox(height: 20),
+            Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextFormField(
+                    controller: _distanceController,
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(),
+                      labelText: 'Distance (m)',
+                    ),
+                    keyboardType: TextInputType.number,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter the distance';
+                      }
+                      if (double.tryParse(value) == null) {
+                        return 'Please enter a valid number';
+                      }
+                      return null;
+                    },
+                  ),
+                  SizedBox(height: 10),
+                  TextFormField(
+                    controller: _durationController,
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(),
+                      labelText: 'Duration (minutes)',
+                    ),
+                    keyboardType: TextInputType.number,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter the duration';
+                      }
+                      if (int.tryParse(value) == null) {
+                        return 'Please enter a valid number';
+                      }
+                      return null;
+                    },
+                  ),
+                  SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: _logActivity,
+                    child: Text('Log Activity'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.teal,
+                      minimumSize: Size(double.infinity, 50), // Set the width and height of the button
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

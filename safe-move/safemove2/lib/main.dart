@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:safemove/map_screen.dart';
 import 'login_screen.dart';
@@ -9,10 +10,30 @@ import 'profile_screen.dart';
 import 'report.dart';
 import 'walking_screen.dart';
 import 'welcome.dart';
+import 'auth_state_handler.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 
+/*
 void main() {
   runApp(SafeMoveApp());
+  Firebase.initializeApp();
 }
+*/
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  runApp(SafeMoveApp());
+}
+
+/*
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+  runApp(SafeMoveApp());
+}*/
 
 class SafeMoveApp extends StatelessWidget {
   @override
@@ -22,7 +43,7 @@ class SafeMoveApp extends StatelessWidget {
       theme: ThemeData(
         primaryColor: Colors.cyan[600],
         hintColor: Colors.cyan[600],
-        fontFamily: 'Arial',
+        fontFamily: 'Roboto',
         
         textTheme: Theme.of(context).textTheme.copyWith(
           displayLarge: TextStyle(fontSize: 72.0, fontWeight: FontWeight.bold),
@@ -32,6 +53,7 @@ class SafeMoveApp extends StatelessWidget {
       ),
       //initialRoute: '/',
       home: WelcomeScreen(),
+      //AuthStateHandler(),
       routes: {
         '/login': (context) => LoginScreen(),
         '/signup': (context) => SignupScreen(),
@@ -63,4 +85,3 @@ class UndefinedScreen extends StatelessWidget {
     );
   }
 }
-

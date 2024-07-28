@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_signin_button/flutter_signin_button.dart'; // Make sure to add this package to your pubspec.yaml
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+//import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
+//import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+import 'package:flutter_signin_button/flutter_signin_button.dart';
 
 class SignupScreen extends StatefulWidget {
   @override
@@ -12,9 +16,81 @@ class _SignupScreenState extends State<SignupScreen> {
   TextEditingController _emailController = TextEditingController();
   TextEditingController _passwordController = TextEditingController();
 
-  void _signUp() {
-    // Implement signup logic here
+  void _signUp() async {
+    try {
+      UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
+      userCredential.user?.updateDisplayName(_fullNameController.text.trim());
+      
+      // Navigate to the home screen or display a success message
+      Navigator.pushReplacementNamed(context, '/home');
+    } on FirebaseAuthException catch (e) {
+      // Handle error
+      print(e.message);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(e.message!),
+      ));
+    }
   }
+
+  void _signInWithGoogle() async {
+    final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+    final GoogleSignInAuthentication googleAuth = await googleUser!.authentication;
+
+    final AuthCredential credential = GoogleAuthProvider.credential(
+      accessToken: googleAuth.accessToken,
+      idToken: googleAuth.idToken,
+    );
+
+    try {
+      UserCredential userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
+      // Handle user sign-in logic
+    } on FirebaseAuthException catch (e) {
+      // Handle error
+      print(e.message);
+    }
+  }
+  /*
+  void _signInWithFacebook() async {
+    final LoginResult result = await FacebookAuth.instance.login();
+
+    if (result.status == LoginStatus.success) {
+      final AccessToken accessToken = result.accessToken!;
+      final AuthCredential credential = FacebookAuthProvider.credential(accessToken.token);
+
+      try {
+        UserCredential userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
+        // Handle user sign-in logic
+      } on FirebaseAuthException catch (e) {
+        // Handle error
+        print(e.message);
+      }
+    }
+  }*/
+  /*
+  void _signInWithApple() async {
+    final appleCredential = await SignInWithApple.getAppleIDCredential(
+      scopes: [
+        AppleIDAuthorizationScopes.email,
+        AppleIDAuthorizationScopes.fullName,
+      ],
+    );
+
+    final oauthCredential = OAuthProvider("apple.com").credential(
+      idToken: appleCredential.identityToken,
+      accessToken: appleCredential.authorizationCode,
+    );
+
+    try {
+      UserCredential userCredential = await FirebaseAuth.instance.signInWithCredential(oauthCredential);
+      // Handle user sign-in logic
+    } on FirebaseAuthException catch (e) {
+      // Handle error
+      print(e.message);
+    }
+  }*/
 
   @override
   Widget build(BuildContext context) {
@@ -51,7 +127,6 @@ class _SignupScreenState extends State<SignupScreen> {
                     if (value == null || value.isEmpty) {
                       return 'Please enter your email';
                     }
-                    // Add additional email format validation if needed
                     return null;
                   },
                 ),
@@ -84,23 +159,23 @@ class _SignupScreenState extends State<SignupScreen> {
                   Buttons.Google,
                   text: "Continue with Google",
                   onPressed: () {
-                    // Implement Google sign-in logic
+                    _signInWithGoogle();
                   },
-                ),
+                ),/*
                 SignInButton(
                   Buttons.Facebook,
                   text: "Continue with Facebook",
                   onPressed: () {
-                    // Implement Facebook sign-in logic
+                    _signInWithFacebook();
                   },
-                ),
+                ),*//*
                 SignInButton(
                   Buttons.Apple,
                   text: "Continue with Apple",
                   onPressed: () {
-                    // Implement Apple sign-in logic
+                    _signInWithApple();
                   },
-                ),
+                ),*/
                 SizedBox(height: 20),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -114,7 +189,6 @@ class _SignupScreenState extends State<SignupScreen> {
                         'Log In',
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
-                      
                     ),
                     ElevatedButton(
                       onPressed: () {
@@ -122,8 +196,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         Navigator.pushReplacementNamed(context, '/home');
                       },
                       child: Text('Skip Signup'),
-                    )
-
+                    ),
                   ],
                 ),
               ],
