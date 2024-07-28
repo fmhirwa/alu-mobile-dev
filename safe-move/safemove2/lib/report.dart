@@ -32,7 +32,7 @@ class _ReportScreenState extends State<ReportScreen> {
   }
 
   void _launchCaller() async {
-    const phoneNumber = '112';
+    const phoneNumber = "tel:112";
     if (await canLaunch(phoneNumber)) {
       await launch(phoneNumber);
     } else {

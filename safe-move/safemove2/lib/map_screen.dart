@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class MapScreen extends StatefulWidget {
   @override
@@ -8,11 +12,71 @@ class MapScreen extends StatefulWidget {
 
 class _MapScreenState extends State<MapScreen> {
   GoogleMapController? mapController;
+  LatLng _currentPosition = LatLng(0, 0);
+  double _todaysDistance = 0.0;
+  String? _userId;
 
-  final LatLng _center = const LatLng(-1.944073, 30.061885);
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserId();
+    _getCurrentLocation();
+  }
+
+  Future<void> _fetchUserId() async {
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      setState(() {
+        _userId = user.uid;
+      });
+      _fetchTodaysDistance();
+    }
+  }
+
+  Future<void> _fetchTodaysDistance() async {
+    if (_userId != null) {
+      DateTime now = DateTime.now();
+      DateTime startOfDay = DateTime(now.year, now.month, now.day);
+
+      QuerySnapshot snapshot = await FirebaseFirestore.instance
+          .collection('activities')
+          .where('userId', isEqualTo: _userId)
+          .where('timestamp', isGreaterThan: startOfDay)
+          .get();
+
+      double todaysDistance = 0.0;
+      for (var doc in snapshot.docs) {
+        var activity = doc.data() as Map<String, dynamic>;
+        todaysDistance += activity['distance'];
+      }
+
+      setState(() {
+        _todaysDistance = todaysDistance;
+      });
+    }
+  }
+
+  Future<void> _requestPermissions() async {
+  var status = await Permission.location.status;
+  if (status.isDenied) {
+    await Permission.location.request();
+  }
+  }
+  
+  Future<void> _getCurrentLocation() async {
+    Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high);
+    setState(() {
+      _currentPosition = LatLng(position.latitude, position.longitude);
+    });
+    mapController?.animateCamera(
+      CameraUpdate.newLatLng(_currentPosition),
+    );
+  }
 
   void _onMapCreated(GoogleMapController controller) {
     mapController = controller;
+    _getCurrentLocation();
   }
 
   @override
@@ -43,7 +107,7 @@ class _MapScreenState extends State<MapScreen> {
                   style: TextStyle(color: Colors.black, fontSize: 16),
                   children: <TextSpan>[
                     TextSpan(
-                        text: '850m',
+                        text: '${_todaysDistance.toStringAsFixed(1)} m',
                         style: TextStyle(color: Colors.teal, fontSize: 16)),
                     TextSpan(
                         text: '.',
@@ -57,28 +121,16 @@ class _MapScreenState extends State<MapScreen> {
             child: GoogleMap(
               onMapCreated: _onMapCreated,
               initialCameraPosition: CameraPosition(
-                target: _center,
-                zoom: 11.0,
+                target: _currentPosition,
+                zoom: 15.0,
               ),
               markers: {
                 Marker(
-                  markerId: MarkerId('routeStart'),
-                  position: _center,
-                  infoWindow: InfoWindow(title: 'Start'),
+                  markerId: MarkerId('currentLocation'),
+                  position: _currentPosition,
+                  infoWindow: InfoWindow(title: 'Your Location'),
                   icon: BitmapDescriptor.defaultMarkerWithHue(
                       BitmapDescriptor.hueRed),
-                ),
-              },
-              polylines: {
-                Polyline(
-                  polylineId: PolylineId('route'),
-                  points: [
-                    LatLng(-1.944073, 30.061885),
-                    LatLng(-1.945073, 30.062885),
-                    LatLng(-1.946073, 30.063885),
-                  ],
-                  color: Colors.blue,
-                  width: 5,
                 ),
               },
             ),

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:geolocator/geolocator.dart';
 
 class WalkingScreen extends StatefulWidget {
   @override
@@ -9,15 +11,80 @@ class WalkingScreen extends StatefulWidget {
 
 class _WalkingScreenState extends State<WalkingScreen> {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _distanceController = TextEditingController();
-  final TextEditingController _durationController = TextEditingController();
+  TextEditingController _distanceController = TextEditingController();
+  TextEditingController _durationController = TextEditingController();
+  String? _userId;
+  List<Map<String, dynamic>> _activities = [];
+  double _totalWeek = 0.0;
+  double _totalMonth = 0.0;
+  GoogleMapController? _mapController;
+  LatLng _currentPosition = LatLng(0, 0);
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserId();
+    _fetchActivities();
+    _getCurrentLocation();
+  }
+
+  Future<void> _fetchUserId() async {
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      setState(() {
+        _userId = user.uid;
+      });
+      _fetchActivities();
+    }
+  }
+
+  Future<void> _fetchActivities() async {
+    if (_userId != null) {
+      QuerySnapshot snapshot = await FirebaseFirestore.instance
+          .collection('activities')
+          .where('userId', isEqualTo: _userId)
+          .get();
+      List<Map<String, dynamic>> activities = snapshot.docs
+          .map((doc) => doc.data() as Map<String, dynamic>)
+          .toList();
+
+      setState(() {
+        _activities = activities;
+        _calculateTotals();
+      });
+    }
+  }
+
+  void _calculateTotals() {
+    DateTime now = DateTime.now();
+    DateTime startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+    DateTime startOfMonth = DateTime(now.year, now.month, 1);
+
+    double totalWeek = 0.0;
+    double totalMonth = 0.0;
+
+    for (var activity in _activities) {
+      DateTime activityDate = (activity['timestamp'] as Timestamp).toDate();
+      double distance = activity['distance'].toDouble();
+      if (activityDate.isAfter(startOfWeek)) {
+        totalWeek += distance;
+      }
+      if (activityDate.isAfter(startOfMonth)) {
+        totalMonth += distance;
+      }
+    }
+
+    setState(() {
+      _totalWeek = totalWeek;
+      _totalMonth = totalMonth;
+    });
+  }
 
   Future<void> _logActivity() async {
     if (_formKey.currentState!.validate()) {
-      try {
-        User? user = FirebaseAuth.instance.currentUser;
+      if (_userId != null) {
         await FirebaseFirestore.instance.collection('activities').add({
-          'userId': user?.uid,
+          'userId': _userId,
           'distance': double.parse(_distanceController.text),
           'duration': int.parse(_durationController.text),
           'timestamp': Timestamp.now(),
@@ -27,12 +94,24 @@ class _WalkingScreenState extends State<WalkingScreen> {
         );
         _distanceController.clear();
         _durationController.clear();
-      } catch (e) {
+        _fetchActivities(); // Fetch activities again to update the list
+      } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to log activity: $e')),
+          SnackBar(content: Text('User not logged in')),
         );
       }
     }
+  }
+
+  Future<void> _getCurrentLocation() async {
+    Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high);
+    setState(() {
+      _currentPosition = LatLng(position.latitude, position.longitude);
+    });
+    _mapController?.animateCamera(
+      CameraUpdate.newLatLng(_currentPosition),
+    );
   }
 
   @override
@@ -57,75 +136,46 @@ class _WalkingScreenState extends State<WalkingScreen> {
           children: [
             RichText(
               text: TextSpan(
-                text: 'Today you walked ',
+                text: 'This week you walked ',
                 style: TextStyle(color: Colors.black, fontSize: 16),
                 children: <TextSpan>[
                   TextSpan(
-                      text: '850m',
+                      text: '${_totalWeek.toStringAsFixed(1)} m',
                       style: TextStyle(color: Colors.blue, fontSize: 16)),
                 ],
               ),
             ),
-            SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildStatusCard('Poor', Colors.grey.shade300),
-                _buildStatusCard('Good', Colors.teal),
-                _buildStatusCard('Perfect', Colors.grey.shade300),
-              ],
-            ),
+            SizedBox(height: 10),
+            Text('Total this week: ${_totalWeek.toStringAsFixed(1)} m'),
+            Text('Total this month: ${_totalMonth.toStringAsFixed(1)} m'),
             SizedBox(height: 20),
             Container(
-              height: 50,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: List.generate(6, (index) {
-                  return Container(
-                    width: 5,
-                    height: 50,
-                    color: index == 3 ? Colors.teal : Colors.grey[300],
-                  );
-                }),
-              ),
-            ),
-            SizedBox(height: 10),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('200ml'),
-                Text('500ml'),
-                Text('700ml'),
-                Text('850ml'),
-                Text('1L'),
-              ],
-            ),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                // Handle "Take a walk" button press
-              },
-              child: Text('Take a walk'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.teal,
-                minimumSize: Size(double.infinity, 50), // Set the width and height of the button
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-            ),
-            SizedBox(height: 20),
-            Card(
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15)),
-              child: ListTile(
-                leading: Icon(Icons.directions_walk, size: 32, color: Colors.blue[800]),
-                title: Text('Add more activities'),
-                trailing: Icon(Icons.chevron_right),
-                onTap: () {
-                  // Handle navigation to add more activities
+              height: 200,
+              child: GoogleMap(
+                onMapCreated: (GoogleMapController controller) {
+                  _mapController = controller;
+                  _getCurrentLocation();
                 },
+                initialCameraPosition: CameraPosition(
+                  target: _currentPosition,
+                  zoom: 15,
+                ),
+                myLocationEnabled: true,
               ),
+            ),
+            SizedBox(height: 20),
+            ListView.builder(
+              shrinkWrap: true,
+              physics: NeverScrollableScrollPhysics(),
+              itemCount: _activities.length,
+              itemBuilder: (context, index) {
+                var activity = _activities[index];
+                return ListTile(
+                  title: Text('${activity['distance']} m'),
+                  subtitle: Text(
+                      '${(activity['timestamp'] as Timestamp).toDate()}'),
+                );
+              },
             ),
             SizedBox(height: 20),
             Form(

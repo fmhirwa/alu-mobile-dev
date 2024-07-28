@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_sign_in/google_sign_in.dart';
-//import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
-//import 'package:sign_in_with_apple/sign_in_with_apple.dart';
-import 'package:flutter_signin_button/flutter_signin_button.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class SignupScreen extends StatefulWidget {
   @override
@@ -15,82 +12,40 @@ class _SignupScreenState extends State<SignupScreen> {
   TextEditingController _fullNameController = TextEditingController();
   TextEditingController _emailController = TextEditingController();
   TextEditingController _passwordController = TextEditingController();
+  bool _isLoading = false;
 
-  void _signUp() async {
-    try {
-      UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
-      );
-      userCredential.user?.updateDisplayName(_fullNameController.text.trim());
-      
-      // Navigate to the home screen or display a success message
-      Navigator.pushReplacementNamed(context, '/home');
-    } on FirebaseAuthException catch (e) {
-      // Handle error
-      print(e.message);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.message!),
-      ));
-    }
-  }
-
-  void _signInWithGoogle() async {
-    final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-    final GoogleSignInAuthentication googleAuth = await googleUser!.authentication;
-
-    final AuthCredential credential = GoogleAuthProvider.credential(
-      accessToken: googleAuth.accessToken,
-      idToken: googleAuth.idToken,
-    );
-
-    try {
-      UserCredential userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
-      // Handle user sign-in logic
-    } on FirebaseAuthException catch (e) {
-      // Handle error
-      print(e.message);
-    }
-  }
-  /*
-  void _signInWithFacebook() async {
-    final LoginResult result = await FacebookAuth.instance.login();
-
-    if (result.status == LoginStatus.success) {
-      final AccessToken accessToken = result.accessToken!;
-      final AuthCredential credential = FacebookAuthProvider.credential(accessToken.token);
+  Future<void> _signUp() async {
+    if (_formKey.currentState!.validate()) {
+      setState(() {
+        _isLoading = true;
+      });
 
       try {
-        UserCredential userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
-        // Handle user sign-in logic
+        UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
+        );
+
+        User? user = userCredential.user;
+
+        if (user != null) {
+          await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+            'fullName': _fullNameController.text.trim(),
+            'email': _emailController.text.trim(),
+          });
+
+          Navigator.pushReplacementNamed(context, '/home');
+        }
       } on FirebaseAuthException catch (e) {
-        // Handle error
-        print(e.message);
+        setState(() {
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message ?? 'An error occurred')),
+        );
       }
     }
-  }*/
-  /*
-  void _signInWithApple() async {
-    final appleCredential = await SignInWithApple.getAppleIDCredential(
-      scopes: [
-        AppleIDAuthorizationScopes.email,
-        AppleIDAuthorizationScopes.fullName,
-      ],
-    );
-
-    final oauthCredential = OAuthProvider("apple.com").credential(
-      idToken: appleCredential.identityToken,
-      accessToken: appleCredential.authorizationCode,
-    );
-
-    try {
-      UserCredential userCredential = await FirebaseAuth.instance.signInWithCredential(oauthCredential);
-      // Handle user sign-in logic
-    } on FirebaseAuthException catch (e) {
-      // Handle error
-      print(e.message);
-    }
-  }*/
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -147,35 +102,13 @@ class _SignupScreenState extends State<SignupScreen> {
                 ),
                 SizedBox(height: 20),
                 ElevatedButton(
-                  onPressed: () {
-                    if (_formKey.currentState!.validate()) {
-                      _signUp();
-                    }
-                  },
-                  child: Text('Create Account'),
+                  onPressed: _isLoading ? null : _signUp,
+                  child: _isLoading
+                      ? CircularProgressIndicator(
+                          color: Colors.white,
+                        )
+                      : Text('Create Account'),
                 ),
-                SizedBox(height: 20),
-                SignInButton(
-                  Buttons.Google,
-                  text: "Continue with Google",
-                  onPressed: () {
-                    _signInWithGoogle();
-                  },
-                ),/*
-                SignInButton(
-                  Buttons.Facebook,
-                  text: "Continue with Facebook",
-                  onPressed: () {
-                    _signInWithFacebook();
-                  },
-                ),*//*
-                SignInButton(
-                  Buttons.Apple,
-                  text: "Continue with Apple",
-                  onPressed: () {
-                    _signInWithApple();
-                  },
-                ),*/
                 SizedBox(height: 20),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -189,13 +122,6 @@ class _SignupScreenState extends State<SignupScreen> {
                         'Log In',
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
-                    ),
-                    ElevatedButton(
-                      onPressed: () {
-                        // Navigate to the Home Screen
-                        Navigator.pushReplacementNamed(context, '/home');
-                      },
-                      child: Text('Skip Signup'),
                     ),
                   ],
                 ),

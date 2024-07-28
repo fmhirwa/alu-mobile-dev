@@ -1,36 +1,8 @@
 import 'package:flutter/material.dart';
-import 'login_screen.dart';
-import 'signup_screen.dart';
-import 'profile_screen.dart';
-import 'map_screen.dart';
-import 'report.dart';
-//import 'package:fl_chart/fl_chart.dart';
-//import 'lib/Assets/profile_image.png';
-
-void main() {
-  runApp(MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-      home: HomeScreen(),
-      routes: {
-        '/login': (context) => LoginScreen(),
-        '/signup': (context) => SignupScreen(),
-        '/home': (context) => HomeScreen(),
-        '/profile': (context) => UserProfileScreen(),
-        '/map': (context) => MapScreen(),
-        '/emergency': (context) => ReportScreen(),
-      },
-    );
-  }
-}
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:fl_chart/fl_chart.dart';
+import 'package:intl/intl.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -38,12 +10,69 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  // Example user metrics, replace these with actual data sources
-  final int healthScore = 1536;
-  final int calories = 500;
-  final int weight = 58;
-  final String sleepDuration = 'No Data'; // This could be a time span typically
-  final int waterIntake = 850;
+  String? _userId;
+  double _dailyGoal = 0.0;
+  double _totalDistance = 0.0;
+  String? _profileImageUrl;
+  List<Map<String, dynamic>> _recentActivities = [];
+  List<FlSpot> _weeklyData = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserData();
+  }
+
+  Future<void> _fetchUserData() async {
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      setState(() {
+        _userId = user.uid;
+      });
+      DocumentSnapshot userProfile =
+          await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      if (userProfile.exists) {
+        setState(() {
+          _dailyGoal = (userProfile['goal'] ?? 0.0).toDouble();
+          _profileImageUrl = userProfile['profileImageUrl'] ?? 'lib/assets/profile_image.png';
+        });
+        _fetchUserActivities();
+      }
+    }
+  }
+
+  Future<void> _fetchUserActivities() async {
+    if (_userId != null) {
+      QuerySnapshot snapshot = await FirebaseFirestore.instance
+          .collection('activities')
+          .where('userId', isEqualTo: _userId)
+          .orderBy('timestamp', descending: true)
+          .limit(7)
+          .get();
+
+      double totalDistance = 0.0;
+      List<FlSpot> weeklyData = [];
+      DateTime now = DateTime.now();
+      DateTime startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+
+      for (var doc in snapshot.docs) {
+        var activity = doc.data() as Map<String, dynamic>;
+        totalDistance += activity['distance'];
+        DateTime date = (activity['timestamp'] as Timestamp).toDate();
+        if (date.isAfter(startOfWeek)) {
+          weeklyData.add(FlSpot(date.weekday.toDouble(), activity['distance'].toDouble()));
+        }
+      }
+
+      setState(() {
+        _recentActivities = snapshot.docs
+            .map((doc) => doc.data() as Map<String, dynamic>)
+            .toList();
+        _totalDistance = totalDistance;
+        _weeklyData = weeklyData;
+      });
+    }
+  }
 
   int _selectedIndex = 0;
 
@@ -66,9 +95,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    double percentageOfGoal = _dailyGoal > 0 ? (_totalDistance / _dailyGoal) : 0;
+    DateTime now = DateTime.now();
+    String currentDate = DateFormat('EEEE, d MMM').format(now);
+
     return Scaffold(
       appBar: AppBar(
-        title: Text('Good Afternoon 🌤️'),
+        title: Text('SafeMove'),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 0,
@@ -78,7 +111,9 @@ class _HomeScreenState extends State<HomeScreen> {
               Navigator.pushNamed(context, '/profile');
             },
             child: CircleAvatar(
-              backgroundImage: AssetImage('lib/assets/profile_image.png'),
+              backgroundImage: _profileImageUrl != null
+                  ? NetworkImage(_profileImageUrl!)
+                  : AssetImage('lib/assets/profile_image.png') as ImageProvider,
               radius: 20,
             ),
           ),
@@ -90,23 +125,19 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Saturday 17 Feb', style: TextStyle(color: Colors.grey[600])),
+            Text(currentDate, style: TextStyle(color: Colors.grey[600])),
             SizedBox(height: 20),
-            _buildHealthScoreCard(),
+            _buildHealthScoreCard(percentageOfGoal),
+            SizedBox(height: 20),
+            Text('Total this week: ${_totalDistance.toStringAsFixed(1)} m', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             SizedBox(height: 30),
-            Text('Metrics', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+            Text('Recent Activities', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
             SizedBox(height: 10),
-            _buildMetricCard('Calories', '$calories Cal', 'Last update 3min', 'assets/calories.svg'),
-            _buildMetricCard('Weight', '$weight Kg', 'Last update 3d', 'assets/weight.svg'),
-            _buildMetricCard('Water', '$waterIntake ml', 'Last update 3min', 'assets/water.svg'),
-            SizedBox(height: 20),
-            Text('Weight Loss', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-            Text('-4%', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.red)),
-            Text('Last 30 days +2%', style: TextStyle(fontSize: 18, color: Colors.cyan[600])),
+            _buildRecentActivities(),
+            SizedBox(height: 30),
+            Text('Weekly Distance', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
             SizedBox(height: 10),
-            _buildWeightLossGraph(),
-            SizedBox(height: 20),
-            _buildMetricCard('Sleep Duration', sleepDuration, 'Last update 1min', 'assets/sleep.svg'),
+            _buildDistanceChart(),
           ],
         ),
       ),
@@ -122,7 +153,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildHealthScoreCard() {
+  Widget _buildHealthScoreCard(double percentageOfGoal) {
     return Card(
       color: Colors.teal[200],
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
@@ -134,12 +165,12 @@ class _HomeScreenState extends State<HomeScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Health Score', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                Text('$healthScore Kcal', style: TextStyle(fontSize: 16)),
+                Text('Goal Achievement', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                Text('${(percentageOfGoal * 100).toStringAsFixed(1)}%', style: TextStyle(fontSize: 16)),
               ],
             ),
             CircularProgressIndicator(
-              value: healthScore / 2000, // Example value
+              value: percentageOfGoal,
               backgroundColor: Colors.grey[300],
               valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00ACC1)),
             ),
@@ -149,26 +180,77 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildMetricCard(String title, String value, String updateInfo, String assetPath) {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      child: ListTile(
-        //leading: SvgPicture.asset(assetPath, width: 42, height: 42),
-        title: Text(title, style: TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text('$value • $updateInfo'),
-        trailing: Icon(Icons.chevron_right),
-        onTap: () {
-          // Handle tap
-        },
-      ),
+  Widget _buildRecentActivities() {
+    return Column(
+      children: _recentActivities.map((activity) {
+        DateTime date = (activity['timestamp'] as Timestamp).toDate();
+        return ListTile(
+          title: Text('${activity['distance']} m'),
+          subtitle: Text(DateFormat('d MMM y HH:mm').format(date)),
+        );
+      }).toList(),
     );
   }
-  
-  Widget _buildWeightLossGraph() {
+
+  Widget _buildDistanceChart() {
     return Container(
       height: 200,
-      child: Placeholder(), // Replace with actual graph implementation
+      child: LineChart(
+        LineChartData(
+          gridData: FlGridData(show: true),
+          titlesData: FlTitlesData(
+            leftTitles: AxisTitles(
+              sideTitles: SideTitles(showTitles: true),
+            ),
+            bottomTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                getTitlesWidget: (value, meta) {
+                  switch (value.toInt()) {
+                    case 1:
+                      return Text('Mon');
+                    case 2:
+                      return Text('Tue');
+                    case 3:
+                      return Text('Wed');
+                    case 4:
+                      return Text('Thu');
+                    case 5:
+                      return Text('Fri');
+                    case 6:
+                      return Text('Sat');
+                    case 7:
+                      return Text('Sun');
+                    default:
+                      return Text('');
+                  }
+                },
+              ),
+            ),
+          ),
+          borderData: FlBorderData(
+            show: true,
+            border: Border.all(color: const Color(0xff37434d)),
+          ),
+          minX: 1,
+          maxX: 7,
+          minY: 0,
+          lineBarsData: [
+            LineChartBarData(
+              spots: _weeklyData,
+              isCurved: true,
+              color: Color(0xFF2196F3),
+              barWidth: 6,
+              isStrokeCapRound: true,
+              belowBarData: BarAreaData(
+                show: true,
+                color: Color(0xFF2196F3).withOpacity(0.3),
+              ),
+              dotData: FlDotData(show: false),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
