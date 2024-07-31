@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class ExtraWidgets extends StatelessWidget {
   @override
-  Widget build(BuildContext contex) {
+  Widget build(BuildContext context) {
     return Scaffold(
       body: Column(
         children: <Widget>[
