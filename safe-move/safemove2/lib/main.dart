@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:safemove/map_screen.dart';
 import 'login_screen.dart';
@@ -44,12 +43,13 @@ class SafeMoveApp extends StatelessWidget {
         primaryColor: Colors.cyan[600],
         hintColor: Colors.cyan[600],
         fontFamily: 'Roboto',
-        
         textTheme: Theme.of(context).textTheme.copyWith(
-          displayLarge: TextStyle(fontSize: 72.0, fontWeight: FontWeight.bold),
-          displayMedium: TextStyle(fontSize: 36.0, fontStyle: FontStyle.italic),
-          displaySmall: TextStyle(fontSize: 14.0, fontFamily: 'Hind'),
-        ),
+              displayLarge:
+                  TextStyle(fontSize: 72.0, fontWeight: FontWeight.bold),
+              displayMedium:
+                  TextStyle(fontSize: 36.0, fontStyle: FontStyle.italic),
+              displaySmall: TextStyle(fontSize: 14.0, fontFamily: 'Hind'),
+            ),
       ),
       //initialRoute: '/',
       home: WelcomeScreen(),
@@ -59,10 +59,9 @@ class SafeMoveApp extends StatelessWidget {
         '/signup': (context) => SignupScreen(),
         '/home': (context) => HomeScreen(),
         '/profile': (context) => UserProfileScreen(),
-        '/map': (context) => MapScreen(),            
-        '/emergency': (context) => ReportScreen(),  
+        '/map': (context) => MapScreen(),
+        '/emergency': (context) => ReportScreen(),
         '/walking': (context) => WalkingScreen(),
-        
       },
       onGenerateRoute: (settings) {
         // Handle undefined routes
@@ -71,6 +70,13 @@ class SafeMoveApp extends StatelessWidget {
     );
   }
 }
+
+/*
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+  runApp(SafeMoveApp());
+}*/
 
 class UndefinedScreen extends StatelessWidget {
   @override
