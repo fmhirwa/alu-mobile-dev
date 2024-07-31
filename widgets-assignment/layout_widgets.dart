@@ -16,7 +16,7 @@ class LayoutWidgets extends StatelessWidget {
             child: Container(
               color: Colors.blue,
               height: 50,
-              width: double.infinity,
+              width: double.infinit,
               child: Center(
                 child: Text('Bottom Bar'),
               ),
