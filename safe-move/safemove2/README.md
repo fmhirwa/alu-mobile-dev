@@ -8,9 +8,9 @@ Enjoy!
 
 G13 BSE S22
 
-Front-end Implementation
-
 G13 S22 BSE
+
+Front-end Implementation
 
 Codebase link:
 https://github.com/fmhirwa/alu-mobile-dev/tree/main/safe-move/safemove2
