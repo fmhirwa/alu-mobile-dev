@@ -9,7 +9,7 @@ class HomeScreen extends StatelessWidget {
       ),
       body: Center(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.cente,
           children: <Widget>[
             Text('Welcome to SafeMove!'),
             SizedBox(height: 20),
